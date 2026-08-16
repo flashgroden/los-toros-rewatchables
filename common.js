@@ -6,10 +6,10 @@ function showMsg(el,msg,type='notice'){el.className=`notice ${type}`;el.textCont
 function parseFilmLabel(s){const m=(s||'').match(/^(.*?)\s*\((\d{4})\)\s*$/);return m?{title:m[1].trim(),year:Number(m[2])}:{title:(s||'').trim(),year:null}}
 function fmt(v){return v==null?'—':Number(v).toFixed(1)}
 
-let supabase=null;
+let ltDb=null;
 try{
   if(window.supabase && window.LT_CONFIG){
-    supabase=window.supabase.createClient(window.LT_CONFIG.SUPABASE_URL,window.LT_CONFIG.SUPABASE_KEY);
+    ltDb=window.supabase.createClient(window.LT_CONFIG.SUPABASE_URL,window.LT_CONFIG.SUPABASE_KEY);
   }
 }catch(err){
   console.error('Supabase init failed',err);

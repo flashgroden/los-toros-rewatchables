@@ -1,5 +1,4 @@
 const MEMBERS=['Greg','Keith','David','Steele','Will'];
-const OMDB_KEY='trilogy';
 
 function mast(){return `<div class="mast"><div><a class="brand-link" href="list.html"><div class="brand">Los Toros</div><div class="sub">Rewatchables Movie Club</div></a></div><nav aria-label="Main navigation"><a href="list.html">The Board</a><a href="nominate.html">Nominate</a><a href="review.html">Rate a Film</a><a href="about.html">About</a></nav></div>`}
 function memberOptions(includeGuest=true){return MEMBERS.map(n=>`<option>${n}</option>`).join('')+(includeGuest?'<option value="__guest">Guest / friend…</option>':'')}
@@ -10,20 +9,28 @@ function fmt(v){return v==null?'—':Number(v).toFixed(1)}
 let ltDb=null;
 try{if(window.supabase&&window.LT_CONFIG)ltDb=window.supabase.createClient(window.LT_CONFIG.SUPABASE_URL,window.LT_CONFIG.SUPABASE_KEY)}catch(err){console.error('Supabase init failed',err)}
 
+const movieLookupCache=new Map();
+async function publicMovieSearch(query){
+  if(!ltDb)throw new Error('Database client unavailable');
+  const {data,error}=await ltDb.functions.invoke('movie-lookup',{body:{q:query}});
+  if(error)throw error;
+  const arr=data?.candidates||[];
+  arr.forEach(x=>{if(x.id)movieLookupCache.set(x.id,x)});
+  return arr;
+}
+
+// Kept under the old helper names so both Nominate and Rate-a-Film stay simple.
 async function omdbLookupTitle(title,year=null){
-  const qs=new URLSearchParams({t:title,apikey:OMDB_KEY,plot:'short'});if(year)qs.set('y',year);
-  const r=await fetch('https://www.omdbapi.com/?'+qs.toString());const d=await r.json();
-  if(d.Response!=='True')return null;
-  const rt=(d.Ratings||[]).find(x=>x.Source==='Rotten Tomatoes');
-  return {id:d.imdbID,title:d.Title,year:parseInt(d.Year)||null,director:d.Director&&d.Director!=='N/A'?d.Director:null,genre:d.Genre&&d.Genre!=='N/A'?d.Genre:null,blurb:d.Plot&&d.Plot!=='N/A'?d.Plot:null,rt:rt?rt.Value:null,poster:d.Poster&&d.Poster!=='N/A'?d.Poster:null};
+  const arr=await publicMovieSearch(title);
+  if(!arr.length)return null;
+  const exact=arr.find(x=>x.title?.toLowerCase()===title.trim().toLowerCase() && (!year || Number(x.year)===Number(year)))
+    || arr.find(x=>!year || Number(x.year)===Number(year))
+    || arr[0];
+  return {...exact,rt:null,poster:null};
 }
 async function omdbSearchMovies(query){
-  const r=await fetch('https://www.omdbapi.com/?'+new URLSearchParams({s:query,type:'movie',apikey:OMDB_KEY}).toString());const d=await r.json();
-  if(d.Response!=='True'||!d.Search)return[];
-  return d.Search.slice(0,8).map(x=>({id:x.imdbID,title:x.Title,year:parseInt(x.Year)||null,poster:x.Poster&&x.Poster!=='N/A'?x.Poster:null}));
+  return publicMovieSearch(query);
 }
 async function omdbLookupId(id){
-  const r=await fetch('https://www.omdbapi.com/?'+new URLSearchParams({i:id,apikey:OMDB_KEY,plot:'short'}).toString());const d=await r.json();
-  if(d.Response!=='True')return null;const rt=(d.Ratings||[]).find(x=>x.Source==='Rotten Tomatoes');
-  return {id:d.imdbID,title:d.Title,year:parseInt(d.Year)||null,director:d.Director&&d.Director!=='N/A'?d.Director:null,genre:d.Genre&&d.Genre!=='N/A'?d.Genre:null,blurb:d.Plot&&d.Plot!=='N/A'?d.Plot:null,rt:rt?rt.Value:null,poster:d.Poster&&d.Poster!=='N/A'?d.Poster:null};
+  return movieLookupCache.get(id)||null;
 }

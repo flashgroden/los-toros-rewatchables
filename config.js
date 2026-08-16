@@ -1,0 +1,1 @@
+window.LT_CONFIG={SUPABASE_URL:'https://lycoafboikmlwtioqssv.supabase.co',SUPABASE_KEY:'sb_publishable_uJAJENVap2L47611QV7aTg_qAyarrZA'};

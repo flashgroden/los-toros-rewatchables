@@ -1,4 +1,5 @@
 const MEMBERS=['Greg','Keith','David','Steele','Will'];
+const OMDB_KEY='trilogy';
 
 function mast(){return `<div class="mast"><div><a class="brand-link" href="list.html"><div class="brand">Los Toros</div><div class="sub">Rewatchables Movie Club</div></a></div><nav aria-label="Main navigation"><a href="list.html">The Board</a><a href="nominate.html">Nominate</a><a href="review.html">Rate a Film</a><a href="about.html">About</a></nav></div>`}
 function memberOptions(includeGuest=true){return MEMBERS.map(n=>`<option>${n}</option>`).join('')+(includeGuest?'<option value="__guest">Guest / friend…</option>':'')}
@@ -9,25 +10,20 @@ function fmt(v){return v==null?'—':Number(v).toFixed(1)}
 let ltDb=null;
 try{if(window.supabase&&window.LT_CONFIG)ltDb=window.supabase.createClient(window.LT_CONFIG.SUPABASE_URL,window.LT_CONFIG.SUPABASE_KEY)}catch(err){console.error('Supabase init failed',err)}
 
-async function lookupMoviesPublic(q){
-  q=(q||'').trim(); if(q.length<2)return[];
-  try{
-    const u=window.LT_CONFIG.SUPABASE_URL+'/functions/v1/movie-lookup?q='+encodeURIComponent(q);
-    const r=await fetch(u,{headers:{apikey:window.LT_CONFIG.SUPABASE_KEY,Authorization:'Bearer '+window.LT_CONFIG.SUPABASE_KEY}});
-    if(r.ok){const j=await r.json();if(j.candidates?.length)return j.candidates}
-  }catch(_){}
-  try{
-    const s=await fetch('https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&origin=*&language=en&uselang=en&type=item&limit=10&search='+encodeURIComponent(q)).then(r=>r.json());
-    let hits=(s.search||[]).filter(x=>/film|movie/i.test(x.description||'')).slice(0,5);
-    if(!hits.length){const s2=await fetch('https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&origin=*&language=en&uselang=en&type=item&limit=10&search='+encodeURIComponent(q+' film')).then(r=>r.json());hits=(s2.search||[]).filter(x=>/film|movie/i.test(x.description||'')).slice(0,5)}
-    const out=[];
-    for(const hit of hits){
-      const e=(await fetch('https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*&props=claims|labels|descriptions&languages=en&ids='+hit.id).then(r=>r.json())).entities?.[hit.id]; if(!e)continue;
-      const claims=e.claims||{};const time=claims.P577?.[0]?.mainsnak?.datavalue?.value?.time||'';const ym=time.match(/[+-](\d{4})-/);const ids=[...(claims.P57||[]).slice(0,2).map(c=>c.mainsnak?.datavalue?.value?.id),...(claims.P136||[]).slice(0,3).map(c=>c.mainsnak?.datavalue?.value?.id)].filter(Boolean);
-      let labels={};if(ids.length){const d=await fetch('https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*&props=labels&languages=en&ids='+encodeURIComponent(ids.join('|'))).then(r=>r.json());for(const id of ids)labels[id]=d.entities?.[id]?.labels?.en?.value||''}
-      const dirs=(claims.P57||[]).slice(0,2).map(c=>labels[c.mainsnak?.datavalue?.value?.id]).filter(Boolean);const genres=(claims.P136||[]).slice(0,3).map(c=>labels[c.mainsnak?.datavalue?.value?.id]).filter(Boolean);
-      out.push({id:hit.id,title:e.labels?.en?.value||hit.label,year:ym?Number(ym[1]):null,director:dirs.join(' & ')||null,genre:genres.join(' / ')||null,blurb:hit.description||''});
-    }
-    return out;
-  }catch(_){return[]}
+async function omdbLookupTitle(title,year=null){
+  const qs=new URLSearchParams({t:title,apikey:OMDB_KEY,plot:'short'});if(year)qs.set('y',year);
+  const r=await fetch('https://www.omdbapi.com/?'+qs.toString());const d=await r.json();
+  if(d.Response!=='True')return null;
+  const rt=(d.Ratings||[]).find(x=>x.Source==='Rotten Tomatoes');
+  return {id:d.imdbID,title:d.Title,year:parseInt(d.Year)||null,director:d.Director&&d.Director!=='N/A'?d.Director:null,genre:d.Genre&&d.Genre!=='N/A'?d.Genre:null,blurb:d.Plot&&d.Plot!=='N/A'?d.Plot:null,rt:rt?rt.Value:null,poster:d.Poster&&d.Poster!=='N/A'?d.Poster:null};
+}
+async function omdbSearchMovies(query){
+  const r=await fetch('https://www.omdbapi.com/?'+new URLSearchParams({s:query,type:'movie',apikey:OMDB_KEY}).toString());const d=await r.json();
+  if(d.Response!=='True'||!d.Search)return[];
+  return d.Search.slice(0,8).map(x=>({id:x.imdbID,title:x.Title,year:parseInt(x.Year)||null,poster:x.Poster&&x.Poster!=='N/A'?x.Poster:null}));
+}
+async function omdbLookupId(id){
+  const r=await fetch('https://www.omdbapi.com/?'+new URLSearchParams({i:id,apikey:OMDB_KEY,plot:'short'}).toString());const d=await r.json();
+  if(d.Response!=='True')return null;const rt=(d.Ratings||[]).find(x=>x.Source==='Rotten Tomatoes');
+  return {id:d.imdbID,title:d.Title,year:parseInt(d.Year)||null,director:d.Director&&d.Director!=='N/A'?d.Director:null,genre:d.Genre&&d.Genre!=='N/A'?d.Genre:null,blurb:d.Plot&&d.Plot!=='N/A'?d.Plot:null,rt:rt?rt.Value:null,poster:d.Poster&&d.Poster!=='N/A'?d.Poster:null};
 }

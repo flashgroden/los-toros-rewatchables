@@ -1,0 +1,8 @@
+/*.html
+  Cache-Control: no-cache, no-store, must-revalidate
+/common.js
+  Cache-Control: no-cache, no-store, must-revalidate
+/config.js
+  Cache-Control: no-cache, no-store, must-revalidate
+/styles.css
+  Cache-Control: no-cache

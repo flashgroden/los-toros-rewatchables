@@ -1,7 +1,9 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Los Toros — Shared Watch</title><link rel="stylesheet" href="/styles.css?v=114"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/config.js?v=114"></script></head><body><div class="wrap"><div id="mast"></div><div id="main" class="card">Opening the shared watch…</div></div><script src="/common.js?v=114"></script><script>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Los Toros — Shared Watch</title><link rel="stylesheet" href="/styles.css?v=115"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/config.js?v=115"></script></head><body><div class="wrap"><div id="mast"></div><div id="main" class="card">Opening the shared watch…</div></div><script src="/common.js?v=115"></script><script>
 document.getElementById('mast').innerHTML=mast();
 const main=document.getElementById('main');
-const qp=new URLSearchParams(location.search),slug=qp.get('watch');
+const qp=new URLSearchParams(location.search);
+const pathParts=location.pathname.split('/').filter(Boolean);
+const slug=qp.get('watch')||(pathParts[0]==='watch'&&pathParts[1]?decodeURIComponent(pathParts[1]):null);
 (async()=>{
  if(!slug){main.textContent='Missing shared watch.';return}
  const who=currentPerson();

@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Los Toros — Critic Scorecards</title><link rel="stylesheet" href="/styles.css?v=112"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/config.js?v=112"></script></head><body><div class="wrap"><div id="mast"></div><h1>Critic Scorecards</h1><p class="lede">No theories yet. Just the receipts.</p><div id="tabs" class="tabs"></div><div id="main" class="card">Loading the record…</div><div class="footer">Official Los Toros watches only. Latest rating shown when someone has rated a film more than once. <span class="meta">Build v1.1.2</span></div></div><script src="/common.js?v=112"></script><script>
+document.getElementById('mast').innerHTML=mast();
+const tabs=document.getElementById('tabs'),main=document.getElementById('main');
+const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+const order=['Greg','Keith','David','Steele','Will'];
+let rows=[];
+function avg(arr,key){const v=arr.map(x=>x[key]).filter(x=>x!=null).map(Number);return v.length?(v.reduce((a,b)=>a+b,0)/v.length):null}
+function totalAvg(arr){const v=arr.map(x=>x.total_40).filter(x=>x!=null).map(Number);return v.length?(v.reduce((a,b)=>a+b,0)/v.length):null}
+function render(name){
+  const mine=rows.filter(r=>r.display_name===name);
+  tabs.innerHTML=order.map(n=>`<button class="tab ${n===name?'active':''}" data-name="${n}">${n}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b=>b.onclick=()=>render(b.dataset.name));
+  const rated=mine.filter(r=>r.overall!=null);
+  const stats=`<div class="grid"><div class="card"><div class="kicker">Films Scored</div><h2>${rated.length}</h2></div><div class="card"><div class="kicker">Avg Total</div><h2>${totalAvg(rated)==null?'—':totalAvg(rated).toFixed(1)+' / 40'}</h2></div><div class="card"><div class="kicker">Avg Overall</div><h2>${fmt(avg(rated,'overall'))}</h2></div><div class="card"><div class="kicker">Avg Rewatch</div><h2>${fmt(avg(rated,'rewatchability'))}</h2></div></div>`;
+  const table=`<div style="overflow-x:auto;margin-top:18px"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">Film</th><th>Craft</th><th>Impact</th><th>RW</th><th>Overall</th><th>Total</th></tr></thead><tbody>${mine.map(r=>`<tr><td style="padding:12px 8px;border-top:1px solid #cdbfa9"><b>${esc(r.title)}</b> <span class="meta">${r.year||''}</span>${r.canon?' <span class="meta">· Canon</span>':''}${Number(r.rating_count)>1?` <span class="meta">· ${r.rating_count} ratings</span>`:''}${r.legacy_incomplete?' <span class="meta">· legacy</span>':''}</td><td style="text-align:center;border-top:1px solid #cdbfa9">${fmt(r.craft)}</td><td style="text-align:center;border-top:1px solid #cdbfa9">${fmt(r.emotional_impact)}</td><td style="text-align:center;border-top:1px solid #cdbfa9">${fmt(r.rewatchability)}</td><td style="text-align:center;border-top:1px solid #cdbfa9">${fmt(r.overall)}</td><td style="text-align:center;border-top:1px solid #cdbfa9"><b>${r.total_40==null?'—':Number(r.total_40).toFixed(1)+'/40'}</b></td></tr>`).join('')}</tbody></table></div>`;
+  main.innerHTML=`<div class="kicker">${esc(name)}</div><h2>${esc(name)}'s Scorecard</h2>${stats}${table}`;
+}
+(async()=>{const {data,error}=await ltDb.rpc('get_critic_scorecards');if(error){main.innerHTML='<p>Could not load scorecards.</p>';return}rows=data||[];const who=currentPerson();render(order.includes(who)?who:'Greg')})();
+</script></body></html>

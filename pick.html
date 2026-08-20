@@ -1,8 +1,8 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Los Toros — Pick the Next Watch</title><link rel="stylesheet" href="styles.css?v=109"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js?v=109"></script></head><body><div class="wrap"><div id="mast"></div><h1>Pick the Next Watch</h1><p class="lede">One swing. Your call.</p><div id="state" class="notice"></div><div id="film" class="card"></div><form id="form"><div class="field"><label>You</label><select id="picker" required></select></div><button class="btn" type="submit">Make This the Next Watch</button></form><div id="msg" class="notice hide"></div><div class="footer">Picking closes this film's Queue cycle and advances the rotation. <span class="meta">Build v1.0.9</span></div></div><script src="common.js?v=109"></script><script>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Los Toros — Pick the Next Watch</title><link rel="stylesheet" href="styles.css?v=111"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js?v=111"></script></head><body><div class="wrap"><div id="mast"></div><h1>Pick the Next Watch</h1><p class="lede">One swing. Your call.</p><div id="state" class="notice"></div><div id="film" class="card"></div><form id="form"><div class="field"><label>You</label><select id="picker" required></select></div><button class="btn" type="submit">Make This the Next Watch</button></form><div id="msg" class="notice hide"></div><div class="footer">Picking closes this film's Queue cycle and advances the rotation. <span class="meta">Build v1.1.1</span></div></div><script src="common.js?v=111"></script><script>
 document.getElementById('mast').innerHTML=mast();
 const state=document.getElementById('state'),filmEl=document.getElementById('film'),form=document.getElementById('form'),picker=document.getElementById('picker'),msg=document.getElementById('msg');
 picker.innerHTML='<option value="">Choose…</option>'+memberOptions(false);
-const remembered=localStorage.getItem('lt_person');if(remembered&&MEMBERS.includes(remembered))picker.value=remembered;
+const remembered=currentPerson();if(remembered)picker.value=remembered;
 const qp=new URLSearchParams(location.search),title=qp.get('title'),year=qp.get('year')?Number(qp.get('year')):null;
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
 filmEl.innerHTML=`<h3>${esc(title||'Film')}${year?' ('+year+')':''}</h3>`;
@@ -11,15 +11,14 @@ function prepButton(){return `<a class="btn" href="on-deck.html">Open Private Pi
 (async()=>{
   const {data,error}=await ltDb.rpc('get_picker_state');
   if(error){state.textContent='Could not load the batting order.';return}
-  if(data.next_watch&&sameFilm(data.next_watch)){
-    state.innerHTML=`<b>${esc(data.next_watch.title)}${data.next_watch.year?' ('+data.next_watch.year+')':''} is already the Next Watch.</b> Picked by ${esc(data.next_watch.picker)}.`;
-    if(data.next_watch.picker==='Will'){
-      form.classList.add('hide');
-      filmEl.insertAdjacentHTML('beforeend',`<p class="meta">Your pick is locked. The prep page is your private host card for Sunday.</p>${prepButton()}`);
-    }
+  if(data.next_watch){
+    form.classList.add('hide');
+    const nw=data.next_watch;
+    const isPicker=currentPerson()===nw.picker;
+    state.innerHTML=`<b>${esc(nw.title)}${nw.year?' ('+nw.year+')':''} is already the Next Watch.</b> Picked by ${esc(nw.picker)}.`;
+    filmEl.innerHTML=`<h3>${esc(nw.title)}${nw.year?' ('+nw.year+')':''}</h3>`+(isPicker?`<p class="meta">Your pick is locked. Your private host prep is ready.</p>${prepButton()}`:`<p class="meta">The next pick belongs to ${esc(data.current_picker)} after this watch.</p>`);
     return;
   }
-  if(data.next_watch){state.innerHTML=`<b>${esc(data.next_watch.title)} is already the next Watch.</b>`;return}
   state.innerHTML=`<b>At bat: ${esc(data.current_picker)}.</b> On deck: ${esc(data.on_deck)}.`;
 })();
 form.onsubmit=async e=>{
@@ -30,10 +29,10 @@ form.onsubmit=async e=>{
   if(error){
     const st=await ltDb.rpc('get_picker_state');
     if(!st.error&&st.data?.next_watch&&sameFilm(st.data.next_watch)&&st.data.next_watch.picker===picker.value){
-      localStorage.setItem('lt_person',picker.value);form.classList.add('hide');showMsg(msg,`${title} is already your pick. Open your private prep page.`,'success');filmEl.insertAdjacentHTML('beforeend',prepButton());return;
+      setCurrentPerson(picker.value);form.classList.add('hide');showMsg(msg,`${title} is already your pick. Open your private prep page.`,'success');filmEl.insertAdjacentHTML('beforeend',prepButton());return;
     }
     showMsg(msg,error.message,'error');return;
   }
-  localStorage.setItem('lt_person',picker.value);showMsg(msg,`${title} is on deck. Your private Picker Prep is ready.`,'success');form.classList.add('hide');filmEl.insertAdjacentHTML('beforeend',prepButton());
+  setCurrentPerson(picker.value);showMsg(msg,`${title} is on deck. Your private Picker Prep is ready.`,'success');form.classList.add('hide');filmEl.insertAdjacentHTML('beforeend',prepButton());
 };
 </script></body></html>

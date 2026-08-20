@@ -1,5 +1,5 @@
 const MEMBERS=['Greg','Keith','David','Steele','Will'];
-const LT_BUILD='v1.0.7';
+const LT_BUILD='v1.0.8';
 
 function mast(){return `<div class="mast"><div><a class="brand-link" href="list.html"><div class="brand">Los Toros</div><div class="sub">Rewatchables Movie Club</div></a></div><nav aria-label="Main navigation"><a href="list.html">The Board</a><a href="nominate.html">Nominate</a><a href="review.html">Rate a Film</a><a href="about.html">About</a><a href="how-it-works.html">How It Works</a></nav></div>`}
 function memberOptions(includeGuest=true){return MEMBERS.map(n=>`<option>${n}</option>`).join('')+(includeGuest?'<option value="__guest">Someone else…</option>':'')}

@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/watch/:slug", "destination": "/watch.html?watch=:slug" },
+    { "source": "/watch/:slug", "destination": "/api/watch-preview?slug=:slug" },
     { "source": "/club/:slug", "destination": "/club-watch.html?watch=:slug" }
   ]
 }

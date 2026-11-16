@@ -2,7 +2,7 @@
 document.getElementById('mast').innerHTML=mast();
 const tabs=document.getElementById('tabs'),main=document.getElementById('main');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
-const order=['Greg','Keith','David','Steele','Will'];let rows=[],extras=[];
+const order=['Greg','Keith','David','Steele','Will','Matt'];let rows=[],extras=[];
 function n(v){return v==null?null:Number(v)}
 function fmt1(v){return v==null?'—':Number(v).toFixed(1)}
 function totalClass(v){if(v==null)return 'total-none';v=Number(v);return v>=35?'total-great':v>=30?'total-good':v>=24?'total-mid':'total-low'}
